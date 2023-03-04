@@ -1,6 +1,5 @@
 const bcrypt = require("bcrypt");
 const connection = require("../mysql");
-//const User = require("../models/user");
 const jwt = require("jsonwebtoken");
 const cloudinary = require("../cloudinary");
 
@@ -34,7 +33,7 @@ exports.signup = (req, res, next) => {
       } else {
         
 
-        const media = await cloudinary.uploader.upload(req.file.path);
+        const media = await cloudinary.uploader.upload(req.file.path,{width: 150, height: 150, gravity: "auto", crop: "fill",radius: "max"});
         const sqlInsert =
           "INSERT INTO user (email, password,pseudo,avatar_url,cloudinary_id) VALUES ('" +
           req.body.email +
@@ -69,7 +68,7 @@ exports.login = (req, res, next) => {
   const sqlCheckUserEmail = "SELECT * FROM user WHERE email = '" + req.body.email + "' ";
 
   connection.query(sqlCheckUserEmail, (err, result) => {
-    console.log(result.length);
+    console.log(result[0]);
     //check the row in the user table .Result is an array with object (id_user, email, password)
     if (result.length === 0) {
       res.json({

@@ -4,6 +4,7 @@ const userCtrl = require("../controllers/user");
 const upload = require("../middleware/multer-config");
 
 router.post("/signup",upload.single("image"), userCtrl.signup);
-router.post("/login", userCtrl.login);
+//any() handle multipart form data
+router.post("/login", upload.any(),userCtrl.login);
 
 module.exports = router;

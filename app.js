@@ -3,7 +3,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 // //let cors = require("cors");
 const userRoutes = require("./routes/user");
-// const sauceRoutes = require("./routes/sauce");
+const postRoutes = require("./routes/post");
 // const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 dotenv.config();
@@ -30,11 +30,11 @@ const app = express();
 
 // //Pour gérer la requête POST venant de l'application front-end, on a besoin d'en extraire le corps JSON.
 app.use(express.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({ extended: true}));
 app.use(bodyParser.json());
 
 app.use("/api/auth/", userRoutes);
-// app.use("/api/sauces", sauceRoutes);
+app.use("/api/post", postRoutes);
 
 // app.use(express.static("./build/"));
 
