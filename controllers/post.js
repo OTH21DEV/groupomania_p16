@@ -72,3 +72,37 @@ exports.modifyPost = async (req, res, next) => {
     });
   }
 };
+
+exports.deletePost = (req, res, next) => {
+  const sqlFindPost = "SELECT * FROM post WHERE id_post = '" + req.params.id + "' ";
+  connection.query(sqlFindPost, async (err, result) => {
+    if (result[0].id_user != req.auth.userId) {
+      res.json({
+        message: "Not authorized",
+      });
+    }
+    if (err) {
+      res.json({
+        error: true,
+        message: err,
+      });
+    } else {
+      //Delete image from cloudinary
+      cloudinary.uploader.destroy(result[0].cloudinary_id);
+      const sqlDeletePost = "DELETE FROM post WHERE id_post = '" + req.params.id + "' ";
+      connection.query(sqlDeletePost, async (err, result) => {
+        if (!err) {
+          res.json({
+            message: "Post deleted",
+          });
+        } else {
+      
+          res.json({
+            error: true,
+            message: err,
+          });
+        }
+      });
+    }
+  });
+};
