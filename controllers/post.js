@@ -125,3 +125,19 @@ exports.getOnePost = async (req, res, next) => {
     }
   });
 };
+
+exports.getAllPosts = async (req, res, next) => {
+  const sqlFindAllPosts = "SELECT * FROM post ";
+  connection.query(sqlFindAllPosts, async (err, result) => {
+    if (!err) {
+      res.json({
+        message: result,
+      });
+    } else {
+      res.json({
+        error: true,
+        message: err,
+      });
+    }
+  });
+};
