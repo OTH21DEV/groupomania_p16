@@ -34,8 +34,9 @@ exports.createPost = async (req, res, next) => {
 
 exports.modifyPost = async (req, res, next) => {
   if (req.file) {
-    const sqlCheckPost = "SELECT * FROM post WHERE id_post = '" + req.body.id_post + "' ";
-    connection.query(sqlCheckPost, async (err, result) => {
+    //check to modify query on  req.params.id
+    const sqlFindPost = "SELECT * FROM post WHERE id_post = '" + req.body.id_post + "' ";
+    connection.query(sqlFindPost, async (err, result) => {
       //cancel media from Cloudinary
       await cloudinary.uploader.destroy(result[0].cloudinary_id);
     });
@@ -56,6 +57,7 @@ exports.modifyPost = async (req, res, next) => {
       }
     });
   } else {
+    //check to modify query on  req.params.id
     //COALESCE update title, body if not null, otherwise returns existing value
     const sqlUpdatePost = "UPDATE post SET title = COALESCE(?, title),body= COALESCE(?, body) WHERE id_post = '" + req.body.id_post + "' ";
     connection.query(sqlUpdatePost, [req.body.title, req.body.body], (err, result) => {
@@ -76,6 +78,8 @@ exports.modifyPost = async (req, res, next) => {
 exports.deletePost = (req, res, next) => {
   const sqlFindPost = "SELECT * FROM post WHERE id_post = '" + req.params.id + "' ";
   connection.query(sqlFindPost, async (err, result) => {
+    //check if the user is a owner of the Post object
+    //compare the id of user in DB with req.auth.userId (received once user is logged )
     if (result[0].id_user != req.auth.userId) {
       res.json({
         message: "Not authorized",
@@ -96,12 +100,27 @@ exports.deletePost = (req, res, next) => {
             message: "Post deleted",
           });
         } else {
-      
           res.json({
             error: true,
             message: err,
           });
         }
+      });
+    }
+  });
+};
+
+exports.getOnePost = async (req, res, next) => {
+  const sqlFindPost = "SELECT * FROM post WHERE id_post = '" + req.params.id + "' ";
+  connection.query(sqlFindPost, async (err, result) => {
+    if (!err) {
+      res.json({
+        message: result[0],
+      });
+    } else {
+      res.json({
+        error: true,
+        message: err,
       });
     }
   });
