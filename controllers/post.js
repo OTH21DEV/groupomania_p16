@@ -44,11 +44,31 @@ exports.modifyPost = async (req, res, next) => {
     //COALESCE update title, body if not null, otherwise returns existing value
     const sqlUpdatePost = "UPDATE post SET title = COALESCE(?, title),body= COALESCE(?, body),image_url=?,cloudinary_id=? WHERE id_post = '" + req.body.id_post + "' ";
     connection.query(sqlUpdatePost, [req.body.title, req.body.body, media.secure_url, media.public_id], (err, result) => {
-      console.log(result);
-
-      res.json({
-        message: "Post modified with file",
-      });
+      if (!err) {
+        res.json({
+          message: "Post modified with file",
+        });
+      } else {
+        res.json({
+          error: true,
+          message: err,
+        });
+      }
+    });
+  } else {
+    //COALESCE update title, body if not null, otherwise returns existing value
+    const sqlUpdatePost = "UPDATE post SET title = COALESCE(?, title),body= COALESCE(?, body) WHERE id_post = '" + req.body.id_post + "' ";
+    connection.query(sqlUpdatePost, [req.body.title, req.body.body], (err, result) => {
+      if (!err) {
+        res.json({
+          message: "Post modified",
+        });
+      } else {
+        res.json({
+          error: true,
+          message: err,
+        });
+      }
     });
   }
 };
