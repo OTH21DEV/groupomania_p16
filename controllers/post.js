@@ -74,23 +74,13 @@ exports.modifyPost = async (req, res, next) => {
     });
   }
 };
-
 exports.deletePost = (req, res, next) => {
   const sqlFindPost = "SELECT * FROM post WHERE id_post = '" + req.params.id + "' ";
   connection.query(sqlFindPost, async (err, result) => {
-    //check if the user is a owner of the Post object
+    //check if the user is a owner of the Post object or admin wit id 18
     //compare the id of user in DB with req.auth.userId (received once user is logged )
-    if (result[0].id_user != req.auth.userId) {
-      res.json({
-        message: "Not authorized",
-      });
-    }
-    if (err) {
-      res.json({
-        error: true,
-        message: err,
-      });
-    } else {
+  
+    if (result[0].id_user === req.auth.userId || req.auth.userId === 18) {
       //Delete image from cloudinary
       cloudinary.uploader.destroy(result[0].cloudinary_id);
       const sqlDeletePost = "DELETE FROM post WHERE id_post = '" + req.params.id + "' ";
@@ -106,9 +96,13 @@ exports.deletePost = (req, res, next) => {
           });
         }
       });
+    }else{
+      res.status(401).json({ message: "Not authorized" });
     }
   });
 };
+
+
 
 exports.getOnePost = async (req, res, next) => {
   const sqlFindPost = "SELECT * FROM post WHERE id_post = '" + req.params.id + "' ";
