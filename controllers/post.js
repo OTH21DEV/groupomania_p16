@@ -145,33 +145,31 @@ exports.postNotation = (req, res, next) => {
   //if (req.body.like == 1) postman dont see the value setted in form-data but see
   //only in body row json format
 
+  //FIND POST in table post
   const sqlFindPost = "SELECT * FROM post WHERE id_post = '" + req.params.id + "' ";
   connection.query(sqlFindPost, async (err, result) => {
     if (!err) {
+      //FIND VOTE in table votes_post
       const sqlFindVote = "SELECT * FROM votes_post WHERE id_user = '" + req.auth.userId + "' ";
       connection.query(sqlFindVote, async (err, result) => {
         if (req.body.like == 1) {
           if (result.length === 0 || !result[0].id_user) {
+            //UPDATE POST in table post with +1 like
             //If expr1 is not NULL, IFNULL() returns expr1; otherwise it returns expr2
             const sqlUpdatePost = "UPDATE post SET likes = IFNULL(likes, 0) + 1 WHERE id_post = '" + req.params.id + "' ";
 
             connection.query(sqlUpdatePost, async (err, result) => {
               console.log("Your vote is registered in the table Post");
+              //Insert data in table votes_post
+              const sqlInsertVotes = "INSERT INTO votes_post (id_user,id_post) VALUES ('" + req.auth.userId + "','" + req.params.id + "' )";
 
-              const sqlUpdateVotes = "INSERT INTO votes_post (id_user,id_post) VALUES ('" + req.auth.userId + "','" + req.params.id + "' )";
-
-              connection.query(sqlUpdateVotes, async (err, result) => {
+              connection.query(sqlInsertVotes, async (err, result) => {
                 console.log("Your vote is registered in the table vote");
               });
             });
           } else {
-            console.log("Your are already vote");
+            console.log("Your are already voted");
           }
-        } else {
-          res.json({
-            error: true,
-            message: err,
-          });
         }
       });
     } else {
