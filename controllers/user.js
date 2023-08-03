@@ -3,22 +3,35 @@ const connection = require("../mysql");
 const jwt = require("jsonwebtoken");
 const cloudinary = require("../cloudinary");
 
+const nodemailer = require("nodemailer");
+const dotenv = require("dotenv");
+dotenv.config();
+
 exports.signup = (req, res, next) => {
-  let message = {};
-  if (!req.body.email) {
-    message = "Please fill in email";
+  function validateFields(req) {
+    let message = {};
+    if (!req.body.email) {
+      message.email = "Please fill in email";
+    }
+    if (!req.body.password) {
+      message.password = "Please fill in password";
+    }
+    if (!req.body.pseudo) {
+      message.pseudo = "Please fill in pseudo";
+    } else if (req.body.password.length < 4 || req.body.password.length > 24) {
+      message.password = "Password must be between 4 and 24 characters";
+    }
+    return message;
   }
-  if (!req.body.password) {
-    message = "Please fill in password";
-  } else if (req.body.password.length < 4 || req.body.password.length > 24) {
-    message = "Password must be between 4 and 24 characters";
-  }
+
+  const message = validateFields(req);
 
   if (Object.keys(message).length > 0) {
     res.json({
       error: true,
       message: message,
     });
+    return;
   } else {
     let password = bcrypt.hashSync(req.body.password, 10);
     const sqlCheckUserEmail = "SELECT * FROM user WHERE email = '" + req.body.email + "' ";
@@ -28,37 +41,51 @@ exports.signup = (req, res, next) => {
       if (result.length > 0) {
         res.json({
           error: true,
-          message: "User already exist",
+          message: "User already exists",
         });
       } else {
-        
+        if (req.file) {
+          const media = await cloudinary.uploader.upload(req.file.path, { width: 150, height: 150, gravity: "auto", crop: "fill", radius: "max" });
+          const sqlInsert =
+            "INSERT INTO user (email, password, pseudo, avatar_url, cloudinary_id) VALUES ('" +
+            req.body.email +
+            "', '" +
+            password +
+            "','" +
+            req.body.pseudo +
+            "','" +
+            media.secure_url +
+            "','" +
+            media.public_id +
+            "' )";
+          connection.query(sqlInsert, (err, result) => {
+            if (!err) {
+              res.json({
+                message: "User created",
+              });
+            } else {
+              res.json({
+                error: true,
+                message: err,
+              });
+            }
+          });
+        } else {
+          const sqlInsert = "INSERT INTO user (email, password, pseudo) VALUES ('" + req.body.email + "', '" + password + "','" + req.body.pseudo + "')";
 
-        const media = await cloudinary.uploader.upload(req.file.path,{width: 150, height: 150, gravity: "auto", crop: "fill",radius: "max"});
-        const sqlInsert =
-          "INSERT INTO user (email, password,pseudo,avatar_url,cloudinary_id) VALUES ('" +
-          req.body.email +
-          "', '" +
-          password +
-          "','" +
-          req.body.pseudo +
-          "','" +
-          media.secure_url +
-          "','" +
-          media.public_id +
-          "' )";
-
-        connection.query(sqlInsert, (err, result) => {
-          if (!err) {
-            res.json({
-              message: "User created",
-            });
-          } else {
-            res.json({
-              error: true,
-              message: err,
-            });
-          }
-        });
+          connection.query(sqlInsert, (err, result) => {
+            if (!err) {
+              res.json({
+                message: "User created",
+              });
+            } else {
+              res.json({
+                error: true,
+                message: err,
+              });
+            }
+          });
+        }
       }
     });
   }
@@ -68,12 +95,29 @@ exports.login = (req, res, next) => {
   const sqlCheckUserEmail = "SELECT * FROM user WHERE email = '" + req.body.email + "' ";
 
   connection.query(sqlCheckUserEmail, (err, result) => {
+    // Function to validate fields and return error messages
+    function validateFields(req) {
+      let message = {};
+
+      if (!req.body.email) {
+        message.email = "Please fill in email";
+      }
+      if (!req.body.password) {
+        message.password = "Please fill in password";
+      } else {
+        message.error = "Incorrect credentials";
+      }
+      return message;
+    }
+
+    let message = validateFields(req);
+
     console.log(result[0]);
-    //check the row in the user table .Result is an array with object (id_user, email, password)
+    // Check the row in the user table. Result is an array with object (id_user, email, password)
     if (result.length === 0) {
       res.json({
         error: true,
-        message: "Incorrect credentials",
+        message: message,
       });
     }
     if (result.length > 0) {
@@ -82,17 +126,99 @@ exports.login = (req, res, next) => {
         if (err) {
           res.json({
             error: true,
-            message: "Incorrect credentials",
+            message: message,
           });
         } else {
           res.status(200).json({
             userId: result[0].id_user,
-            //token arguments (data to encode - here id user from db, secret key for encode,
-            //configuration of token validity)
             token: jwt.sign({ userId: result[0].id_user }, "RANDOM_TOKEN_SECRET", { expiresIn: "24h" }),
           });
         }
       });
+    }
+  });
+};
+
+// Create a Nodemailer transporter
+const transporter = nodemailer.createTransport({
+  service: "Gmail",
+  auth: {
+    user: process.env.EMAIL,
+    pass: process.env.PASSWORD,
+  },
+});
+
+exports.forgotPassword = (req, res, next) => {
+  const sqlCheckUserEmail = "SELECT * FROM user WHERE email = '" + req.body.email + "' ";
+
+  connection.query(sqlCheckUserEmail, (err, result) => {
+    // Function to validate fields and return error messages
+    function validateFields(req) {
+      let message = {};
+
+      if (!req.body.email) {
+        message.email = "Please fill in email";
+      }
+      // if (!req.body.password) {
+      //   message.password = "Please fill in password";
+      // } else {
+      //   message.error = "Incorrect credentials";
+      // }
+      return message;
+    }
+
+    let message = validateFields(req);
+
+    console.log(result[0]);
+    // Check the row in the user table. Result is an array with object (id_user, email, password)
+    if (result.length === 0) {
+      res.json({
+        error: true,
+        message: message,
+      });
+    }
+    if (result.length > 0) {
+
+      const transporter = nodemailer.createTransport({
+        service: process.env.SERVICE,
+        host: process.env.HOST,
+        port: process.env.SERVICE_PORT,
+        secure: false,
+        auth: {
+          user: process.env.EMAIL,
+          pass: process.env.PASSWORD,
+        },
+      });
+      const mailOptions = {
+        from: process.env.EMAIL,
+        // to: result[0].email,
+        to: "otheis@protonmail.com",
+        subject: "Password Reset",
+        text: `Click on the following link to reset your password: http://localhost:3001/reset-password`,
+      };
+
+      transporter.sendMail(mailOptions, function (error, response) {
+        if (error) {
+          console.log("Error sending password reset email:", error);
+        } else {
+          console.log("Password reset email sent successfully");
+        }
+      });
+
+      // console.log(result[0].password);
+      // bcrypt.compare(req.body.password, result[0].password, (err, resp) => {
+      //   if (err) {
+      //     res.json({
+      //       error: true,
+      //       message: message,
+      //     });
+      //   } else {
+      //     res.status(200).json({
+      //       userId: result[0].id_user,
+      //       token: jwt.sign({ userId: result[0].id_user }, "RANDOM_TOKEN_SECRET", { expiresIn: "24h" }),
+      //     });
+      //   }
+      // });
     }
   });
 };

@@ -4,7 +4,7 @@ const bodyParser = require("body-parser");
 // //let cors = require("cors");
 const userRoutes = require("./routes/user");
 const postRoutes = require("./routes/post");
-// const mongoose = require("mongoose");
+
 const dotenv = require("dotenv");
 dotenv.config();
 
@@ -33,7 +33,7 @@ app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true}));
 app.use(bodyParser.json());
 
-app.use("/api/auth/", userRoutes);
+app.use("/api/auth", userRoutes);
 app.use("/api/post", postRoutes);
 
 // app.use(express.static("./build/"));
