@@ -139,15 +139,6 @@ exports.login = (req, res, next) => {
   });
 };
 
-// Create a Nodemailer transporter
-const transporter = nodemailer.createTransport({
-  service: "Gmail",
-  auth: {
-    user: process.env.EMAIL,
-    pass: process.env.PASSWORD,
-  },
-});
-
 exports.forgotPassword = (req, res, next) => {
   const sqlCheckUserEmail = "SELECT * FROM user WHERE email = '" + req.body.email + "' ";
 
@@ -157,13 +148,11 @@ exports.forgotPassword = (req, res, next) => {
       let message = {};
 
       if (!req.body.email) {
-        message.email = "Please fill in email";
+        message.error = "Please fill in email";
+      } else {
+        message.error= "Incorrect credentials";
       }
-      // if (!req.body.password) {
-      //   message.password = "Please fill in password";
-      // } else {
-      //   message.error = "Incorrect credentials";
-      // }
+
       return message;
     }
 
@@ -178,47 +167,56 @@ exports.forgotPassword = (req, res, next) => {
       });
     }
     if (result.length > 0) {
+      console.log(result[0].email)
+      const recoveryToken = jwt.sign({}, "RANDOM_TOKEN_SECRET", { expiresIn: "5m" });
+      // console.log(newToken)
+      const sqlUpdateUserRecoveryToken = "UPDATE user SET recovery_token = COALESCE(?, recovery_token) WHERE email=?";
 
-      const transporter = nodemailer.createTransport({
-        service: process.env.SERVICE,
-        host: process.env.HOST,
-        port: process.env.SERVICE_PORT,
-        secure: false,
-        auth: {
-          user: process.env.EMAIL,
-          pass: process.env.PASSWORD,
-        },
+      connection.query(sqlUpdateUserRecoveryToken, [recoveryToken, req.body.email], (err, result) => {
+  
+        if (err) throw err;
+
+        const transporter = nodemailer.createTransport({
+          service: process.env.SERVICE,
+          host: process.env.HOST,
+          port: process.env.SERVICE_PORT,
+          secure: false,
+          auth: {
+            user: process.env.EMAIL,
+            pass: process.env.PASSWORD,
+          },
+        });
+        const mailOptions = {
+          from: process.env.EMAIL,
+          // to: result[0].email,
+          to:req.body.email,
+          // to: "otheis@protonmail.com",
+          subject: "Password Reset",
+          text: `Click on the following link to reset your password: http://localhost:3001/reset-password?token=${recoveryToken}`,
+        };
+
+        transporter.sendMail(mailOptions, function (error, response) {
+          console.log(response)
+          if (error) {
+            console.log("Error sending password reset email:", error);
+          } else {
+            console.log("Password reset email sent successfully");
+            
+            
+          }
+          
+          
+        });
+ 
+
       });
-      const mailOptions = {
-        from: process.env.EMAIL,
-        // to: result[0].email,
-        to: "otheis@protonmail.com",
-        subject: "Password Reset",
-        text: `Click on the following link to reset your password: http://localhost:3001/reset-password`,
-      };
 
-      transporter.sendMail(mailOptions, function (error, response) {
-        if (error) {
-          console.log("Error sending password reset email:", error);
-        } else {
-          console.log("Password reset email sent successfully");
-        }
+      res.status(200).json({
+        userId: result[0].id_user,
+        // token: result[0].recovery_token
+        token: recoveryToken,
+        message:"Password reset link sent successfully to your email "
       });
-
-      // console.log(result[0].password);
-      // bcrypt.compare(req.body.password, result[0].password, (err, resp) => {
-      //   if (err) {
-      //     res.json({
-      //       error: true,
-      //       message: message,
-      //     });
-      //   } else {
-      //     res.status(200).json({
-      //       userId: result[0].id_user,
-      //       token: jwt.sign({ userId: result[0].id_user }, "RANDOM_TOKEN_SECRET", { expiresIn: "24h" }),
-      //     });
-      //   }
-      // });
     }
   });
 };
