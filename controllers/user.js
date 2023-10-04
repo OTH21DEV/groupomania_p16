@@ -218,7 +218,8 @@ exports.forgotPassword = (req, res, next) => {
 
 exports.resetPassword = (req, res, next) => {
   const authToken = req.query.token;
-  console.log(authToken);
+  console.log(req.body.password)
+  // console.log(authToken);
 
   const sqlCheckUserRecoveryToken = "SELECT * FROM user WHERE recovery_token = '" + authToken + "' ";
 
@@ -240,29 +241,44 @@ exports.resetPassword = (req, res, next) => {
 
     // console.log(result[0]);
     // Check the row in the user table. Result is an array with object (id_user, email, password)
-    if (result.length === 0) {
-      res.json({
-        error: true,
-        message: message,
-      });
-    }
+    // if (result.length === 0) {
+    //   res.json({
+    //     error: true,
+    //     message: message,
+    //   });
+    // }
     if (result.length > 0) {
-      let password = bcrypt.hashSync(req.body.password, 10);
+       if(!req.body.password){
+        res.json({
+          error: true,
+          message: message,
+        });
+      }
+      else{
 
-      const sqlUpdateUserPassword = "UPDATE user SET password = COALESCE(?, password) WHERE recovery_token=?";
-
-      connection.query(sqlUpdateUserPassword, [password, authToken], (err, result) => {
-        if (!err) {
-          res.json({
-            message: "Password modified",
-          });
-        } else {
-          res.json({
-            error: true,
-            message: err,
-          });
-        }
-      });
+        let password = bcrypt.hashSync(req.body.password, 10);
+  console.log(req.body.password)
+        // const sqlUpdateUserPassword = "UPDATE user SET password = COALESCE(?, password) WHERE recovery_token=?";
+        const sqlUpdateUserPassword = "UPDATE user SET password = ? WHERE recovery_token=?";
+        connection.query(sqlUpdateUserPassword, [password, authToken], (err, result) => {
+          if (!err) {
+            res.json({
+              message: "Password modified",
+            });
+          } else {
+            res.json({
+              error: true,
+              message: err,
+            });
+          }
+        });
+      }
     }
+    //     if (result.length === 0) {
+    //   res.json({
+    //     error: true,
+    //     message: "test",
+    //   });
+    // }
   });
 };
