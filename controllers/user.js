@@ -93,51 +93,71 @@ exports.signup = (req, res, next) => {
 };
 
 exports.login = (req, res, next) => {
-  const sqlCheckUserEmail = "SELECT * FROM user WHERE email = '" + req.body.email + "' ";
+  function validateFields(req) {
+    // let message = {};
 
-  connection.query(sqlCheckUserEmail, (err, result) => {
-    // Function to validate fields and return error messages
-    function validateFields(req) {
-      let message = {};
+    // if (!req.body.email) {
+    //   message.email = "Please fill in email";
+    // }
+    //  if (!req.body.password) {
+    //   message.password = "Please fill in password";
+    // } else {
+    //   message.error = "Incorrect credentials";
+    // }
+    // return message;
+    let message = {};
 
-      if (!req.body.email) {
-        message.email = "Please fill in email";
+    if (!req.body.email) {
+      message.email = "Please fill in email";
+    }
+    if (!req.body.password) {
+      message.password = "Please fill in password";
+    }
+
+    if (req.body.password && !req.body.email) {
+      message.error = "Incorrect credentials";
+    }
+
+    return message;
+  }
+
+  let message = validateFields(req);
+
+  if (req.body.email && req.body.password) {
+    const sqlCheckUserEmail = "SELECT * FROM user WHERE email = '" + req.body.email + "' ";
+
+    connection.query(sqlCheckUserEmail, (err, result) => {
+      console.log(result[0]);
+      // Check the row in the user table. Result is an array with object (id_user, email, password)
+      if (result.length === 0) {
+        res.json({
+          error: true,
+          message: message,
+        });
       }
-      if (!req.body.password) {
-        message.password = "Please fill in password";
-      } else {
-        message.error = "Incorrect credentials";
+      if (result.length > 0) {
+        console.log(result[0].password);
+        bcrypt.compare(req.body.password, result[0].password, (err, resp) => {
+          if (err || !resp) {
+            res.json({
+              error: true,
+              message: "Incorrect credentials",
+            });
+          } else {
+            res.status(200).json({
+              userId: result[0].id_user,
+              token: jwt.sign({ userId: result[0].id_user }, "RANDOM_TOKEN_SECRET", { expiresIn: "24h" }),
+            });
+          }
+        });
       }
-      return message;
-    }
-
-    let message = validateFields(req);
-
-    console.log(result[0]);
-    // Check the row in the user table. Result is an array with object (id_user, email, password)
-    if (result.length === 0) {
-      res.json({
-        error: true,
-        message: message,
-      });
-    }
-    if (result.length > 0) {
-      console.log(result[0].password);
-      bcrypt.compare(req.body.password, result[0].password, (err, resp) => {
-        if (err) {
-          res.json({
-            error: true,
-            message: message,
-          });
-        } else {
-          res.status(200).json({
-            userId: result[0].id_user,
-            token: jwt.sign({ userId: result[0].id_user }, "RANDOM_TOKEN_SECRET", { expiresIn: "24h" }),
-          });
-        }
-      });
-    }
-  });
+    });
+  } else {
+    res.json({
+      error: true,
+      message: message,
+    });
+  }
 };
 
 exports.forgotPassword = (req, res, next) => {
@@ -218,7 +238,7 @@ exports.forgotPassword = (req, res, next) => {
 
 exports.resetPassword = (req, res, next) => {
   const authToken = req.query.token;
-  console.log(req.body.password)
+  console.log(req.body.password);
   // console.log(authToken);
 
   const sqlCheckUserRecoveryToken = "SELECT * FROM user WHERE recovery_token = '" + authToken + "' ";
@@ -231,54 +251,36 @@ exports.resetPassword = (req, res, next) => {
       if (!req.body.password) {
         message.password = "Please fill in password";
       }
-      // else {
-      // //   message.error = "Incorrect credentials";
-      // // }
+
       return message;
     }
 
     let message = validateFields(req);
 
-    // console.log(result[0]);
     // Check the row in the user table. Result is an array with object (id_user, email, password)
-    // if (result.length === 0) {
-    //   res.json({
-    //     error: true,
-    //     message: message,
-    //   });
-    // }
-    if (result.length > 0) {
-       if(!req.body.password){
-        res.json({
-          error: true,
-          message: message,
-        });
-      }
-      else{
 
-        let password = bcrypt.hashSync(req.body.password, 10);
-  console.log(req.body.password)
-        // const sqlUpdateUserPassword = "UPDATE user SET password = COALESCE(?, password) WHERE recovery_token=?";
-        const sqlUpdateUserPassword = "UPDATE user SET password = ? WHERE recovery_token=?";
-        connection.query(sqlUpdateUserPassword, [password, authToken], (err, result) => {
-          if (!err) {
-            res.json({
-              message: "Password modified",
-            });
-          } else {
-            res.json({
-              error: true,
-              message: err,
-            });
-          }
-        });
-      }
+    if (result.length > 0) {
+      let password = bcrypt.hashSync(req.body.password, 10);
+      console.log(req.body.password);
+      // const sqlUpdateUserPassword = "UPDATE user SET password = COALESCE(?, password) WHERE recovery_token=?";
+      const sqlUpdateUserPassword = "UPDATE user SET password = ? WHERE recovery_token=?";
+      connection.query(sqlUpdateUserPassword, [password, authToken], (err, result) => {
+        if (!err) {
+          res.json({
+            message: "Password modified",
+          });
+        } else {
+          res.json({
+            error: true,
+            message: err,
+          });
+        }
+      });
+    } else {
+      res.json({
+        error: true,
+        message: message,
+      });
     }
-    //     if (result.length === 0) {
-    //   res.json({
-    //     error: true,
-    //     message: "test",
-    //   });
-    // }
   });
 };
