@@ -4,34 +4,67 @@ const dotenv = require("dotenv");
 dotenv.config();
 
 exports.createPost = async (req, res, next) => {
-  //how set token in postman, see only req.auth.userId object  without token in response
-  console.log(req.auth);
-  const media = await cloudinary.uploader.upload(req.file.path, { width: 150, height: 150 });
-  const sqlInsert =
-    "INSERT INTO post (id_user,title,body,image_url,cloudinary_id) VALUES ('" +
-    req.auth.userId +
-    "','" +
-    req.body.title +
-    "', '" +
-    req.body.body +
-    "','" +
-    media.secure_url +
-    "','" +
-    media.public_id +
-    "' )";
+  function validateFields(req) {
+    let message = {};
+    if (!req.body.title) {
+      message.title = "Please fill in title";
+    }
+    if (!req.body.body) {
+      message.body = "Please fill in description";
+    }
 
-  connection.query(sqlInsert, (err, result) => {
-    if (!err) {
-      res.json({
-        message: "Post created",
-      });
-    } else {
-      res.json({
+    return message;
+  }
+
+  const message = validateFields(req);
+
+  try {
+    console.log(req.auth);
+
+    // Check if title and body fields are not empty
+    if (!req.body.title || !req.body.body) {
+      return res.json({
         error: true,
-        message: err,
+        message: message,
       });
     }
-  });
+
+    let media = {};
+    if (req.file) {
+      media = await cloudinary.uploader.upload(req.file.path, { width: 150, height: 150 });
+    }
+
+    const sqlInsert =
+      "INSERT INTO post (id_user,title,body,image_url,cloudinary_id) VALUES ('" +
+      req.auth.userId +
+      "','" +
+      req.body.title +
+      "', '" +
+      req.body.body +
+      "','" +
+      media.secure_url +
+      "','" +
+      media.public_id +
+      "' )";
+
+    connection.query(sqlInsert, (err, result) => {
+      if (!err) {
+        res.json({
+          message: "Post created",
+        });
+      } else {
+        res.json({
+          error: true,
+          message: err,
+        });
+      }
+    });
+  } catch (error) {
+    res.json({
+      error: true,
+      message: error.message,
+    });
+  }
 };
 
 exports.modifyPost = async (req, res, next) => {
