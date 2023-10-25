@@ -31,31 +31,55 @@ exports.createPost = async (req, res, next) => {
 
     let media = {};
     if (req.file) {
-      media = await cloudinary.uploader.upload(req.file.path, { width: 150, height: 150 });
+      // media = await cloudinary.uploader.upload(req.file.path, { width: 150, height: 150 });
+      media = await cloudinary.uploader.upload(req.file.path);
     }
 
-    const sqlInsert =
-      "INSERT INTO post (id_user,title,body,image_url,cloudinary_id) VALUES ('" +
-      req.auth.userId +
-      "','" +
-      req.body.title +
-      "', '" +
-      req.body.body +
-      "','" +
-      media.secure_url +
-      "','" +
-      media.public_id +
-      "' )";
+    
 
-    connection.query(sqlInsert, (err, result) => {
-      if (!err) {
-        res.json({
-          message: "Post created",
-        });
-      } else {
+    const sqlFindUserPseudo = "SELECT * FROM user WHERE id_user = '" + req.auth.userId + "' ";
+
+    connection.query(sqlFindUserPseudo, (err, result) => {
+      console.log(result[0]);
+      // Check the row in the user table. Result is an array with object (id_user, email, password)
+      if (result.length === 0) {
         res.json({
           error: true,
-          message: err,
+          message: message,
+        });
+      }
+      if (result.length > 0) {
+        console.log(result[0].pseudo);
+        const currentDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
+        console.log(currentDate)
+        const sqlInsert =
+          "INSERT INTO post (id_user,pseudo, title,body,image_url,cloudinary_id,date) VALUES ('" +
+          req.auth.userId +
+          "','" +
+          result[0].pseudo +
+          "','" +
+          req.body.title +
+          "', '" +
+          req.body.body +
+          "','" +
+          media.secure_url +
+          "','" +
+          media.public_id +
+          "','" +
+          currentDate +
+          "' )";
+
+        connection.query(sqlInsert, (err, result) => {
+          if (!err) {
+            res.json({
+              message: "Post created",
+            });
+          } else {
+            res.json({
+              error: true,
+              message: err,
+            });
+          }
         });
       }
     });
@@ -66,6 +90,72 @@ exports.createPost = async (req, res, next) => {
     });
   }
 };
+
+// exports.createPost = async (req, res, next) => {
+//   function validateFields(req) {
+//     let message = {};
+//     if (!req.body.title) {
+//       message.title = "Please fill in title";
+//     }
+//     if (!req.body.body) {
+//       message.body = "Please fill in description";
+//     }
+
+//     return message;
+//   }
+
+//   const message = validateFields(req);
+
+//   try {
+//     console.log(req.auth);
+
+//     // Check if title and body fields are not empty
+//     if (!req.body.title || !req.body.body) {
+//       return res.json({
+//         error: true,
+//         message: message,
+//       });
+//     }
+
+//     let media = {};
+//     if (req.file) {
+//       media = await cloudinary.uploader.upload(req.file.path, { width: 150, height: 150 });
+//     }
+
+//     const sqlInsert =
+//       "INSERT INTO post (id_user,pseudo, title,body,image_url,cloudinary_id) VALUES ('" +
+//       req.auth.userId +
+//       "','" +
+//       req.auth.pseudo +
+//       "','" +
+//       req.body.title +
+//       "', '" +
+//       req.body.body +
+//       "','" +
+//       media.secure_url +
+//       "','" +
+//       media.public_id +
+//       "' )";
+
+//     connection.query(sqlInsert, (err, result) => {
+//       if (!err) {
+//         res.json({
+//           message: "Post created",
+//         });
+//       } else {
+//         res.json({
+//           error: true,
+//           message: err,
+//         });
+//       }
+//     });
+//   } catch (error) {
+//     res.json({
+//       error: true,
+//       message: error.message,
+//     });
+//   }
+// };
 
 exports.modifyPost = async (req, res, next) => {
   //check to modify query on  req.params.id

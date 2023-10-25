@@ -94,17 +94,7 @@ exports.signup = (req, res, next) => {
 
 exports.login = (req, res, next) => {
   function validateFields(req) {
-    // let message = {};
 
-    // if (!req.body.email) {
-    //   message.email = "Please fill in email";
-    // }
-    //  if (!req.body.password) {
-    //   message.password = "Please fill in password";
-    // } else {
-    //   message.error = "Incorrect credentials";
-    // }
-    // return message;
     let message = {};
 
     if (!req.body.email) {
