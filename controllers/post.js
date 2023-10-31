@@ -32,7 +32,7 @@ exports.createPost = async (req, res, next) => {
     let media = {};
     if (req.file) {
       // media = await cloudinary.uploader.upload(req.file.path, { width: 150, height: 150 });
-      media = await cloudinary.uploader.upload(req.file.path);
+      media = await cloudinary.uploader.upload(req.file.path,{ height: 150 });
     }
 
     
@@ -91,71 +91,7 @@ exports.createPost = async (req, res, next) => {
   }
 };
 
-// exports.createPost = async (req, res, next) => {
-//   function validateFields(req) {
-//     let message = {};
-//     if (!req.body.title) {
-//       message.title = "Please fill in title";
-//     }
-//     if (!req.body.body) {
-//       message.body = "Please fill in description";
-//     }
 
-//     return message;
-//   }
-
-//   const message = validateFields(req);
-
-//   try {
-//     console.log(req.auth);
-
-//     // Check if title and body fields are not empty
-//     if (!req.body.title || !req.body.body) {
-//       return res.json({
-//         error: true,
-//         message: message,
-//       });
-//     }
-
-//     let media = {};
-//     if (req.file) {
-//       media = await cloudinary.uploader.upload(req.file.path, { width: 150, height: 150 });
-//     }
-
-//     const sqlInsert =
-//       "INSERT INTO post (id_user,pseudo, title,body,image_url,cloudinary_id) VALUES ('" +
-//       req.auth.userId +
-//       "','" +
-//       req.auth.pseudo +
-//       "','" +
-//       req.body.title +
-//       "', '" +
-//       req.body.body +
-//       "','" +
-//       media.secure_url +
-//       "','" +
-//       media.public_id +
-//       "' )";
-
-//     connection.query(sqlInsert, (err, result) => {
-//       if (!err) {
-//         res.json({
-//           message: "Post created",
-//         });
-//       } else {
-//         res.json({
-//           error: true,
-//           message: err,
-//         });
-//       }
-//     });
-//   } catch (error) {
-//     res.json({
-//       error: true,
-//       message: error.message,
-//     });
-//   }
-// };
 
 exports.modifyPost = async (req, res, next) => {
   //check to modify query on  req.params.id
@@ -233,9 +169,12 @@ exports.deletePost = (req, res, next) => {
 };
 
 exports.getOnePost = async (req, res, next) => {
+  // console.log(req.query.id)
+  // console.log(req.params.id)
   const sqlFindPost = "SELECT * FROM post WHERE id_post = '" + req.params.id + "' ";
   connection.query(sqlFindPost, async (err, result) => {
     if (!err) {
+      // console.log(result[0])
       res.json({
         message: result[0],
       });
