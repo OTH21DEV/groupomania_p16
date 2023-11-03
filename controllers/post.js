@@ -189,9 +189,9 @@ exports.getOnePost = async (req, res, next) => {
       const sqlFindVote = "SELECT * FROM votes_post WHERE id_user = '" + req.auth.userId + "' ";
       connection.query(sqlFindVote, async (err, voteResult) => {
         const hasUserVoted = voteResult.some((vote) => parseInt(vote.id_user) === parseInt(req.auth.userId) && parseInt(vote.id_post) === parseInt(req.params.id));
-        console.log(hasUserVoted);
+        // console.log(hasUserVoted);
         if (!hasUserVoted) {
-          console.log(req.params.id);
+          // console.log(req.params.id);
           res.json({
             error: false,
             message: result[0],
@@ -286,6 +286,62 @@ exports.getAllPosts = async (req, res, next) => {
 //   });
 
 // };
+// exports.postNotation = (req, res, next) => {
+//   // FIND POST in table post
+//   const sqlFindPost = "SELECT * FROM post WHERE id_post = '" + req.params.id + "' ";
+//   connection.query(sqlFindPost, async (err, result) => {
+//     if (!err) {
+//       // FIND VOTE in table votes_post
+//       const sqlFindVote = "SELECT * FROM votes_post WHERE id_user = '" + req.auth.userId + "' ";
+//       connection.query(sqlFindVote, async (err, voteResult) => {
+//         // console.log(voteResult);
+//         // console.log(req.auth.userId);
+//         if (req.body.like == 1) {
+//           console.log(req.body.like)
+//           // const hasUserVoted = voteResult.some(vote => vote.id_user === req.auth.userId && (vote.id_post === req.params.id));
+//           const hasUserVoted = voteResult.some((vote) => parseInt(vote.id_user) === parseInt(req.auth.userId) && parseInt(vote.id_post) === parseInt(req.params.id));
+//           // console.log(hasUserVoted);
+//           if (!hasUserVoted) {
+//             // console.log(req.params.id);
+//             // UPDATE POST in table post with +1 like
+//             // If expr1 is not NULL, IFNULL() returns expr1; otherwise it returns expr2
+//             const sqlUpdatePost = "UPDATE post SET likes = IFNULL(likes, 0) + 1 WHERE id_post = '" + req.params.id + "' ";
+//             connection.query(sqlUpdatePost, async (err, result) => {
+//               console.log("Your vote is registered in the table Post");
+//               // Insert data in table votes_post
+//               const sqlInsertVotes = "INSERT INTO votes_post (id_user,id_post) VALUES ('" + req.auth.userId + "','" + req.params.id + "' )";
+//               connection.query(sqlInsertVotes, async (err, result) => {
+//                 console.log("Your vote is registered in the table vote");
+//                 res.json({
+//                   error: false,
+//                   message: "Your vote is registered in the table vote",
+//                 });
+//               });
+//             });
+//           } else {
+//             console.log("You have already voted");
+//             res.json({
+//               error: true,
+//               message: "You have already voted",
+//             });
+//           }
+//         } else {
+//           console.log("Post not found or invalid vote");
+//           res.json({
+//             error: true,
+//             message: "Post not found or invalid vote",
+//           });
+//         }
+//       });
+//     } else {
+//       res.json({
+//         error: true,
+//         message: err,
+//       });
+//     }
+//   });
+// };
+
 exports.postNotation = (req, res, next) => {
   // FIND POST in table post
   const sqlFindPost = "SELECT * FROM post WHERE id_post = '" + req.params.id + "' ";
@@ -294,14 +350,15 @@ exports.postNotation = (req, res, next) => {
       // FIND VOTE in table votes_post
       const sqlFindVote = "SELECT * FROM votes_post WHERE id_user = '" + req.auth.userId + "' ";
       connection.query(sqlFindVote, async (err, voteResult) => {
-        console.log(voteResult);
-        console.log(req.auth.userId);
-        if (req.body.like == 1) {
+        // console.log(voteResult);
+        // console.log(req.auth.userId);
+        // if (req.body.like == 1) {
+          console.log(req.body.like)
           // const hasUserVoted = voteResult.some(vote => vote.id_user === req.auth.userId && (vote.id_post === req.params.id));
           const hasUserVoted = voteResult.some((vote) => parseInt(vote.id_user) === parseInt(req.auth.userId) && parseInt(vote.id_post) === parseInt(req.params.id));
-          console.log(hasUserVoted);
+          // console.log(hasUserVoted);
           if (!hasUserVoted) {
-            console.log(req.params.id);
+            // console.log(req.params.id);
             // UPDATE POST in table post with +1 like
             // If expr1 is not NULL, IFNULL() returns expr1; otherwise it returns expr2
             const sqlUpdatePost = "UPDATE post SET likes = IFNULL(likes, 0) + 1 WHERE id_post = '" + req.params.id + "' ";
@@ -324,13 +381,13 @@ exports.postNotation = (req, res, next) => {
               message: "You have already voted",
             });
           }
-        } else {
-          console.log("Post not found or invalid vote");
-          res.json({
-            error: true,
-            message: "Post not found or invalid vote",
-          });
-        }
+        // } else {
+        //   console.log("Post not found or invalid vote");
+        //   res.json({
+        //     error: true,
+        //     message: "Post not found or invalid vote",
+        //   });
+        // }
       });
     } else {
       res.json({
