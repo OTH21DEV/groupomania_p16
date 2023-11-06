@@ -6,8 +6,8 @@ const auth = require("../middleware/auth");
 
 router.post("/new-post", auth, upload.single("image"), postCtrl.createPost);
 router.post("/post/:id/like", auth, postCtrl.postNotation);
-router.put("/:id", auth, upload.single("image"), postCtrl.modifyPost);
-router.delete("/:id", auth, postCtrl.deletePost);
+router.put("/modify-post/:id", auth, upload.single("image"), postCtrl.modifyPost);
+router.delete("/post/:id", auth, postCtrl.deletePost);
 // router.get("/post?:id", auth, postCtrl.getOnePost);
 router.get("/post/:id", auth, postCtrl.getOnePost);
 router.get("/", auth, postCtrl.getAllPosts);
