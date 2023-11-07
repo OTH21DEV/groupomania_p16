@@ -91,10 +91,14 @@ exports.createPost = async (req, res, next) => {
 
 exports.modifyPost = async (req, res, next) => {
   //check to modify query on  req.params.id
-  const sqlFindPost = "SELECT * FROM post WHERE id_post = '" + req.body.id_post + "' ";
+  const sqlFindPost = "SELECT * FROM post WHERE id_post = '" + req.params.id + "' ";
+
   connection.query(sqlFindPost, async (err, result) => {
+    console.log(result[0].id_user)
+    console.log(req.auth.userId )
     //check the id of user or admin
-    if (result[0].id_user === req.auth.userId || req.auth.userId === 1) {
+    // if (result[0].id_user === req.auth.userId || req.auth.userId === 1) {
+      if (result[0].id_user == req.auth.userId ) {
       //check if there is a new file added
       if (req.file) {
         //cancel media from Cloudinary
@@ -113,7 +117,7 @@ exports.modifyPost = async (req, res, next) => {
       }
       //if there isn't new file update with req.body values
       else {
-        const sqlUpdatePost = "UPDATE post SET title = COALESCE(?, title),body= COALESCE(?, body) WHERE id_post = '" + req.body.id_post + "' ";
+        const sqlUpdatePost = "UPDATE post SET title = COALESCE(?, title),body= COALESCE(?, body) WHERE id_post = '" + req.params.id + "' ";
         connection.query(sqlUpdatePost, [req.body.title, req.body.body], (err, result) => {
           if (!err) {
             res.json({
@@ -121,7 +125,7 @@ exports.modifyPost = async (req, res, next) => {
             });
           } else {
             res.json({
-              message: "Non authorized",
+              message: "Non TEST authorized",
             });
           }
         });
@@ -164,38 +168,95 @@ exports.deletePost = (req, res, next) => {
   });
 };
 
+// exports.getOnePost = async (req, res, next) => {
+//   const sqlFindPost = "SELECT * FROM post WHERE id_post = '" + req.params.id + "' ";
+//   connection.query(sqlFindPost, async (err, result) => {
+//     if (!err) {
+//       const sqlFindVote = "SELECT * FROM votes_post WHERE id_user = '" + req.auth.userId + "' ";
+//       connection.query(sqlFindVote, async (err, voteResult) => {
+//         const hasUserVoted = voteResult.some((vote) => parseInt(vote.id_user) === parseInt(req.auth.userId) && parseInt(vote.id_post) === parseInt(req.params.id));
+//         // console.log(hasUserVoted);
+//         if (!hasUserVoted) {
+//           // console.log(req.params.id);
+//           res.json({
+//             error: false,
+//             message: result[0],
+//             isVoted: false,
+//           });
+//         } else {
+//           res.json({
+//             error: false,
+//             message: result[0],
+//             isVoted: true,
+//           });
+//         }
+//       });
+//     } else {
+//       res.json({
+//         error: true,
+//         message: err,
+//       });
+//     }
+//   });
+// };
+
+
 
 exports.getOnePost = async (req, res, next) => {
-  const sqlFindPost = "SELECT * FROM post WHERE id_post = '" + req.params.id + "' ";
-  connection.query(sqlFindPost, async (err, result) => {
-    if (!err) {
-      const sqlFindVote = "SELECT * FROM votes_post WHERE id_user = '" + req.auth.userId + "' ";
-      connection.query(sqlFindVote, async (err, voteResult) => {
-        const hasUserVoted = voteResult.some((vote) => parseInt(vote.id_user) === parseInt(req.auth.userId) && parseInt(vote.id_post) === parseInt(req.params.id));
-        // console.log(hasUserVoted);
-        if (!hasUserVoted) {
-          // console.log(req.params.id);
-          res.json({
-            error: false,
-            message: result[0],
-            isVoted: false,
-          });
-        } else {
-          res.json({
-            error: false,
-            message: result[0],
-            isVoted: true,
-          });
-        }
-      });
-    } else {
-      res.json({
+  try {
+    const post = await sqlFindPost(req.params.id);
+
+    if (!post) {
+      return res.json({
         error: true,
-        message: err,
+        message: "Post not found",
       });
     }
-  });
+
+    const isAuthor = post.id_user === req.auth.userId;
+    const hasUserVoted = await sqlFindVote(req.auth.userId, req.params.id);
+
+    res.json({
+      error: false,
+      message: post,
+      isAuthor: isAuthor,
+      isVoted: hasUserVoted,
+    });
+  } catch (err) {
+    res.json({
+      error: true,
+      message: err.message,
+    });
+  }
 };
+
+function sqlFindPost(postId) {
+  return new Promise((resolve, reject) => {
+    const sql = "SELECT * FROM post WHERE id_post = ?";
+    connection.query(sql, [postId], (err, result) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(result[0]);
+      }
+    });
+  });
+}
+
+
+function sqlFindVote(userId, postId) {
+  return new Promise((resolve, reject) => {
+    const sql = "SELECT * FROM votes_post WHERE id_user = ? AND id_post = ?";
+    connection.query(sql, [userId, postId], (err, result) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(result.length > 0);
+      }
+    });
+  });
+}
+
 ///////////////////////////////
 exports.getAllPosts = async (req, res, next) => {
   const sqlFindAllPosts = "SELECT * FROM post ";
@@ -212,7 +273,6 @@ exports.getAllPosts = async (req, res, next) => {
     }
   });
 };
-
 
 exports.postNotation = (req, res, next) => {
   // FIND POST in table post
