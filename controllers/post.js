@@ -146,7 +146,10 @@ exports.deletePost = (req, res, next) => {
     //check if the user is a owner of the Post object or admin wit id 18
     //compare the id of user in DB with req.auth.userId (received once user is logged )
 
-    if (result[0].id_user === req.auth.userId || req.auth.userId === 18) {
+    console.log(result[0].id_user)
+    console.log(req.auth.userId)
+    if (result[0].id_user === req.auth.userId ) {
+    // if (result[0].id_user === req.auth.userId || req.auth.userId === 1) {
       //Delete image from cloudinary
       cloudinary.uploader.destroy(result[0].cloudinary_id);
       const sqlDeletePost = "DELETE FROM post WHERE id_post = '" + req.params.id + "' ";
