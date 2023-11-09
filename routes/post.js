@@ -11,4 +11,5 @@ router.delete("/post/:id", auth, postCtrl.deletePost);
 // router.get("/post?:id", auth, postCtrl.getOnePost);
 router.get("/post/:id", auth, postCtrl.getOnePost);
 router.get("/", auth, postCtrl.getAllPosts);
+router.post("/post/:id/:parent_id", auth, postCtrl.postComment);
 module.exports = router;
