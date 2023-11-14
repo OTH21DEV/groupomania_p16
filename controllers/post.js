@@ -314,7 +314,7 @@ exports.postNotation = (req, res, next) => {
         // console.log(voteResult);
         // console.log(req.auth.userId);
         // if (req.body.like == 1) {
-     
+
         // const hasUserVoted = voteResult.some(vote => vote.id_user === req.auth.userId && (vote.id_post === req.params.id));
         const hasUserVoted = voteResult.some((vote) => parseInt(vote.id_user) === parseInt(req.auth.userId) && parseInt(vote.id_post) === parseInt(req.params.id));
         // console.log(hasUserVoted);
@@ -370,13 +370,15 @@ exports.postComment = async (req, res, next) => {
         message: "Post not found",
       });
     } else {
-      // const createdComment = await sqlAddCommentToPost(req.params.id);
-      await incrementPostCommentsCounter(req.params.id);
-      const test = await addComment(req.auth.userId, req.params.id, req.params.parent_id, req.body.body, currentDate);
 
+      await incrementPostCommentsCounter(req.params.id);
+      let userData = await findUser(req.auth.userId);
+      await addComment(req.auth.userId, req.params.id, req.params.parent_id, userData[0].pseudo, req.body.body, currentDate);
+      console.log(userData[0].pseudo);
       return res.json({
         error: false,
         message: "Comment added",
+        commentedBy: userData,
       });
     }
   } catch (error) {
@@ -385,7 +387,7 @@ exports.postComment = async (req, res, next) => {
       message: error.message,
     });
   }
-  // FIND POST in table post
+ 
 };
 
 function incrementPostCommentsCounter(postId) {
@@ -401,12 +403,12 @@ function incrementPostCommentsCounter(postId) {
   });
 }
 
-function addComment(userId, postId, parentId, body, date) {
+function addComment(userId, postId, parentId, pseudo, body, date) {
   return new Promise((resolve, reject) => {
     // const currentDate = new Date().toISOString().slice(0, 19).replace("T", " ");
 
-    const sql = "INSERT INTO comments_post (id_user, id_post,parent_id,body,date) VALUES (?, ?, ?, ?, ?)";
-    connection.query(sql, [userId, postId, parentId, body, date], (err, result) => {
+    const sql = "INSERT INTO comments_post (id_user, id_post,parent_id,pseudo, body,date) VALUES (?, ?, ?, ?, ?,?)";
+    connection.query(sql, [userId, postId, parentId, pseudo,body, date], (err, result) => {
       if (err) {
         reject(err);
       } else {
@@ -417,11 +419,24 @@ function addComment(userId, postId, parentId, body, date) {
 }
 
 ///////////////////////////////
+function findUser(userId) {
+  return new Promise((resolve, reject) => {
+    const sql = "SELECT * FROM user WHERE id_user = ?";
+    connection.query(sql, [userId], (err, result) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(result);
+      }
+    });
+  });
+}
+
+///////////////////////////////
 exports.getPostComments = async (req, res, next) => {
   const sqlFindAllComments = "SELECT * FROM comments_post WHERE id_post = ?";
   connection.query(sqlFindAllComments, [req.params.id], async (err, result) => {
     if (!err) {
-   
       res.json({
         data: result,
       });
