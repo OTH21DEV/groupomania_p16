@@ -233,7 +233,6 @@ function sqlDeleteFromVote(postId) {
 
 //test
 
-
 exports.getOnePost = async (req, res, next) => {
   try {
     const post = await sqlFindPost(req.params.id);
@@ -247,10 +246,7 @@ exports.getOnePost = async (req, res, next) => {
 
     const isAuthor = post.id_user === req.auth.userId;
     const hasUserVoted = await sqlFindVote(req.auth.userId, req.params.id);
-    const comments = await getPostComments(req.params.id)
-    
-
-
+    const comments = await getPostComments(req.params.id);
 
     res.json({
       error: false,
@@ -437,7 +433,6 @@ function findUser(userId) {
   });
 }
 
-
 // function getPostComments(postId) {
 //   return new Promise((resolve, reject) => {
 //     const sql = "SELECT * FROM comments_post WHERE id_post = ?";
@@ -459,41 +454,105 @@ function getPostComments(postId) {
       } else {
         // console.log(result)
         // Convert the flat comments array into a hierarchical structure
-        const commentsWithReplies = convertToHierarchy(result);
-        resolve(commentsWithReplies);
+        // const commentsWithReplies = convertToHierarchy(result);
+        const list = listToTree(result);
+
+        const flatList = treeToList(list, (item, level) => {
+          return {
+            ...item,
+            level
+          };
+        });
+        // resolve(commentsWithReplies);
+        resolve(flatList);
       }
     });
   });
 }
 
-function convertToHierarchy(comments) {
-  const commentMap = {};
-  const rootComments = [];
+// function treeToList(tree, callback, level = 0, result = []) {
+//   // Iterate over each item in the input tree.
+//   for (const item of tree) {
+//     // If a callback is provided, call the callback with the current item and level, and push the result to the output array. Otherwise, push the current item directly to the output array.
+//     result.push(callback ? callback(item, level) : item);
 
-  // Create a map of comments with their IDs as keys
-  for (const comment of comments) {
+//     // If the current item has children, recursively call the function with the children as the new input tree, an updated level, and the same output array being built up by the parent call.
+//     if (item.children?.length) treeToList(item.children, callback, level + 1, result);
+//   }
+
+//   // Return the final output array.
+//   return result;
+// }
+function treeToList(tree, callback, level = 0, result = []) {
+  // Iterate over each item in the input tree.
+  for (const item of tree) {
+    // If a callback is provided, call the callback with the current item and level, and push the result to the output array. Otherwise, push the current item directly to the output array.
+    const processedItem = callback ? callback(item, level) : item;
+    result.push(processedItem);
+
+    // If the current item has children, recursively call the function with the children as the new input tree, an updated level, and the same output array being built up by the parent call.
+    if (item.children?.length) {
+      treeToList(item.children, callback, level + 1, result);
+    }
+  }
+
+  // Return the final output array.
+  return result;
+}
+function listToTree(comments) {
+  const commentMap = {};
+  const tree = [];
+
+  comments.forEach(comment => {
     const commentId = comment.id_comments;
     comment.children = [];
     commentMap[commentId] = comment;
-  }
+  });
 
-  // Build the hierarchy by linking child comments to their parent comments
-  for (const comment of comments) {
+  comments.forEach(comment => {
     const parentId = comment.parent_id;
-    if (parentId === 0) {
-      // Parent comment, add to root comments
-      rootComments.push(comment);
-    } else {
-      // Child comment, link it to its parent
+    if (parentId !== 0) {
       const parentComment = commentMap[parentId];
       if (parentComment) {
         parentComment.children.push(comment);
       }
+    } else {
+      tree.push(comment);
     }
-  }
+  });
 
-  return rootComments;
+
+  return tree;
 }
+// function listToTree(list) {
+//   let trees = {};
+//   let roots = {};
+
+//   for (const item of list) {
+//     // Adding the item to the node index and creating the children property
+//     if (!trees[item.id_comments]) {
+//       trees[item.id_comments] = item;
+//       trees[item.id_comments].children = [];
+//     } else {
+//       trees[item.id_comments] = { ...trees[item.id_comments], ...item };
+//     }
+
+//     // If the item has a parent, add it to the parent's children
+//     if (item.parent_id) {
+//       // If the parent is not yet in the index, create an entry for it with an empty children array, since we know the id_comments of the parent
+//       if (!trees[item.parent_id]) trees[item.parent_id] = { children: [] };
+
+//       // Add to the parent's children
+//       trees[item.parent_id].children.push(trees[item.id_comments]);
+//     }
+
+//     // Add the comment to the roots object regardless of whether it has a parent_id or not
+//     roots[item.id_comments] = trees[item.id_comments];
+//   }
+
+//   return Object.values(roots);
+// }
+
 
 // Managing the assignment of `parent_comment_id` in your front-end depends on how you are structuring and displaying your comments. Here is a general approach:
 
@@ -510,3 +569,42 @@ function convertToHierarchy(comments) {
 // Remember to update the underlying data structure and re-render the comments section to reflect the changes whenever a new comment is added or a reply is made.
 
 // By maintaining this hierarchical data structure and handling the assignment of `parent_comment_id` accordingly, you can easily manage the organization of comments and their replies in your front-end application.
+
+
+// "comments": [
+//   {
+//       "id_comments": 19,
+//       "id_user": 65,
+//       "id_post": 40,
+//       "parent_id": 0,
+//       "pseudo": "azerty",
+//       "body": null,
+//       "date": "2023-11-15T12:36:51.000Z",
+//       "children": [
+//           {
+//               "id_comments": 20,
+//               "id_user": 65,
+//               "id_post": 40,
+//               "parent_id": 19,
+//               "pseudo": "azerty",
+//               "body": null,
+//               "date": "2023-11-15T12:41:50.000Z",
+//               "children": [],
+//               "level": 0
+//           }
+//       ],
+//       "level": 0
+//   },
+//   {
+//       "id_comments": 21,
+//       "id_user": 65,
+//       "id_post": 40,
+//       "parent_id": 0,
+//       "pseudo": "azerty",
+//       "body": null,
+//       "date": "2023-11-15T12:48:34.000Z",
+//       "children": [],
+//       "level": 0
+//   },
+//   ...
+// ]
