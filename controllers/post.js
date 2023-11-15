@@ -139,37 +139,6 @@ exports.modifyPost = async (req, res, next) => {
     }
   });
 };
-//V1
-// exports.deletePost = (req, res, next) => {
-//   const sqlFindPost = "SELECT * FROM post WHERE id_post = '" + req.params.id + "' ";
-//   connection.query(sqlFindPost, async (err, result) => {
-//     //check if the user is a owner of the Post object or admin wit id 18
-//     //compare the id of user in DB with req.auth.userId (received once user is logged )
-
-//     console.log(result[0].id_user)
-//     console.log(req.auth.userId)
-//     if (result[0].id_user === req.auth.userId ) {
-//     // if (result[0].id_user === req.auth.userId || req.auth.userId === 1) {
-//       //Delete image from cloudinary
-//       cloudinary.uploader.destroy(result[0].cloudinary_id);
-//       const sqlDeletePost = "DELETE FROM post WHERE id_post = '" + req.params.id + "' ";
-//       connection.query(sqlDeletePost, async (err, result) => {
-//         if (!err) {
-//           res.json({
-//             message: "Post deleted",
-//           });
-//         } else {
-//           res.json({
-//             error: true,
-//             message: err,
-//           });
-//         }
-//       });
-//     } else {
-//       res.status(401).json({ message: "Not authorized" });
-//     }
-//   });
-// };
 
 exports.deletePost = async (req, res, next) => {
   const sqlFindPost = "SELECT * FROM post WHERE id_post = '" + req.params.id + "' ";
@@ -232,6 +201,39 @@ function sqlDeleteFromVote(postId) {
 }
 /////////
 
+// exports.getOnePost = async (req, res, next) => {
+//   try {
+//     const post = await sqlFindPost(req.params.id);
+
+//     if (!post) {
+//       return res.json({
+//         error: true,
+//         message: "Post not found",
+//       });
+//     }
+
+//     const isAuthor = post.id_user === req.auth.userId;
+//     const hasUserVoted = await sqlFindVote(req.auth.userId, req.params.id);
+//     const comments = await getPostComments(req.params.id)
+
+//     res.json({
+//       error: false,
+//       post: post,
+//       comments: comments,
+//       isAuthor: isAuthor,
+//       isVoted: hasUserVoted,
+//     });
+//   } catch (err) {
+//     res.json({
+//       error: true,
+//       message: err.message,
+//     });
+//   }
+// };
+
+//test
+
+
 exports.getOnePost = async (req, res, next) => {
   try {
     const post = await sqlFindPost(req.params.id);
@@ -245,10 +247,15 @@ exports.getOnePost = async (req, res, next) => {
 
     const isAuthor = post.id_user === req.auth.userId;
     const hasUserVoted = await sqlFindVote(req.auth.userId, req.params.id);
+    const comments = await getPostComments(req.params.id)
+    
+
+
 
     res.json({
       error: false,
-      message: post,
+      post: post,
+      comments: comments,
       isAuthor: isAuthor,
       isVoted: hasUserVoted,
     });
@@ -370,10 +377,9 @@ exports.postComment = async (req, res, next) => {
         message: "Post not found",
       });
     } else {
-
       await incrementPostCommentsCounter(req.params.id);
       let userData = await findUser(req.auth.userId);
-      await addComment(req.auth.userId, req.params.id, req.params.parent_id, userData[0].pseudo, req.body.body, currentDate);
+      await addComment(req.auth.userId, req.params.id, req.body.parent_id, userData[0].pseudo, req.body.body, currentDate);
       console.log(userData[0].pseudo);
       return res.json({
         error: false,
@@ -387,7 +393,6 @@ exports.postComment = async (req, res, next) => {
       message: error.message,
     });
   }
- 
 };
 
 function incrementPostCommentsCounter(postId) {
@@ -408,7 +413,7 @@ function addComment(userId, postId, parentId, pseudo, body, date) {
     // const currentDate = new Date().toISOString().slice(0, 19).replace("T", " ");
 
     const sql = "INSERT INTO comments_post (id_user, id_post,parent_id,pseudo, body,date) VALUES (?, ?, ?, ?, ?,?)";
-    connection.query(sql, [userId, postId, parentId, pseudo,body, date], (err, result) => {
+    connection.query(sql, [userId, postId, parentId, pseudo, body, date], (err, result) => {
       if (err) {
         reject(err);
       } else {
@@ -432,22 +437,63 @@ function findUser(userId) {
   });
 }
 
-///////////////////////////////
-exports.getPostComments = async (req, res, next) => {
-  const sqlFindAllComments = "SELECT * FROM comments_post WHERE id_post = ?";
-  connection.query(sqlFindAllComments, [req.params.id], async (err, result) => {
-    if (!err) {
-      res.json({
-        data: result,
-      });
-    } else {
-      res.json({
-        error: true,
-        message: err,
-      });
-    }
+
+// function getPostComments(postId) {
+//   return new Promise((resolve, reject) => {
+//     const sql = "SELECT * FROM comments_post WHERE id_post = ?";
+//     connection.query(sql, [postId], (err, result) => {
+//       if (err) {
+//         reject(err);
+//       } else {
+//         resolve(result);
+//       }
+//     });
+//   });
+// }
+function getPostComments(postId) {
+  return new Promise((resolve, reject) => {
+    const sql = "SELECT * FROM comments_post WHERE id_post = ?";
+    connection.query(sql, [postId], (err, result) => {
+      if (err) {
+        reject(err);
+      } else {
+        // console.log(result)
+        // Convert the flat comments array into a hierarchical structure
+        const commentsWithReplies = convertToHierarchy(result);
+        resolve(commentsWithReplies);
+      }
+    });
   });
-};
+}
+
+function convertToHierarchy(comments) {
+  const commentMap = {};
+  const rootComments = [];
+
+  // Create a map of comments with their IDs as keys
+  for (const comment of comments) {
+    const commentId = comment.id_comments;
+    comment.children = [];
+    commentMap[commentId] = comment;
+  }
+
+  // Build the hierarchy by linking child comments to their parent comments
+  for (const comment of comments) {
+    const parentId = comment.parent_id;
+    if (parentId === 0) {
+      // Parent comment, add to root comments
+      rootComments.push(comment);
+    } else {
+      // Child comment, link it to its parent
+      const parentComment = commentMap[parentId];
+      if (parentComment) {
+        parentComment.children.push(comment);
+      }
+    }
+  }
+
+  return rootComments;
+}
 
 // Managing the assignment of `parent_comment_id` in your front-end depends on how you are structuring and displaying your comments. Here is a general approach:
 
