@@ -433,18 +433,6 @@ function findUser(userId) {
   });
 }
 
-// function getPostComments(postId) {
-//   return new Promise((resolve, reject) => {
-//     const sql = "SELECT * FROM comments_post WHERE id_post = ?";
-//     connection.query(sql, [postId], (err, result) => {
-//       if (err) {
-//         reject(err);
-//       } else {
-//         resolve(result);
-//       }
-//     });
-//   });
-// }
 function getPostComments(postId) {
   return new Promise((resolve, reject) => {
     const sql = "SELECT * FROM comments_post WHERE id_post = ?";
@@ -452,24 +440,100 @@ function getPostComments(postId) {
       if (err) {
         reject(err);
       } else {
-        // console.log(result)
-        // Convert the flat comments array into a hierarchical structure
-        // const commentsWithReplies = convertToHierarchy(result);
-        const list = listToTree(result);
+        // console.log(result);
+        const list = listToTree(result); // Extract list and commentMap from listToTree result
+        console.log(result);
+        console.log(list)
 
         const flatList = treeToList(list, (item, level) => {
           return {
             ...item,
-            level
+            level,
           };
         });
-        // resolve(commentsWithReplies);
+        console.log(flatList);
         resolve(flatList);
+       
       }
     });
   });
 }
+//Working without children
+// function treeToList(comments) {
+//   const treeMap = {};
+//   const result = [];
 
+//   // Create a mapping of comments by their id_comments
+//   for (const comment of comments) {
+//     comment.children = [];
+//     treeMap[comment.id_comments] = comment;
+//   }
+
+//   // Build the tree structure by adding children to their parent comments
+//   for (const comment of comments) {
+//     if (comment.parent_id && treeMap[comment.parent_id]) {
+//       treeMap[comment.parent_id].children.push(comment);
+//     } else {
+//       result.push(comment);
+//     }
+//   }
+
+//   return result;
+// }
+
+function treeToList(tree, callback, parentId = null, level = 0, excludeParent = false) {
+  let result = [];
+
+  for (const item of tree) {
+    const newItem = { ...item };
+    if (parentId !== null) {
+      newItem.id_comments = parentId;
+    }
+    
+    if (!excludeParent) {
+      result.push(callback ? callback(newItem, level) : newItem);
+    }
+
+    if (item.children?.length) {
+      const childrenList = treeToList(item.children, callback, item.id_comments, level + 1, true);
+      result = result.concat(childrenList);
+    }
+  }
+
+  return result;
+}
+
+
+
+function listToTree(list) {
+  let commentMap = {};
+  let roots = [];
+
+  // First pass: Create a map of comments using their IDs as keys
+  for (const item of list) {
+    const comment = {
+      ...item,
+      children: [],
+    };
+
+    commentMap[comment.id_comments] = comment;
+  }
+
+  // Second pass: Build the tree structure
+  for (const item of list) {
+    const comment = commentMap[item.id_comments];
+    const parentComment = commentMap[item.parent_id];
+
+    if (parentComment) {
+      parentComment.children.push(comment); // Add the comment as a child to the parent comment
+    } else {
+      roots.push(comment); // Add the comment as a root comment
+    }
+  }
+
+  return roots;
+}
+// //Working
 // function treeToList(tree, callback, level = 0, result = []) {
 //   // Iterate over each item in the input tree.
 //   for (const item of tree) {
@@ -477,53 +541,44 @@ function getPostComments(postId) {
 //     result.push(callback ? callback(item, level) : item);
 
 //     // If the current item has children, recursively call the function with the children as the new input tree, an updated level, and the same output array being built up by the parent call.
-//     if (item.children?.length) treeToList(item.children, callback, level + 1, result);
+//     // if (item.children?.length) treeToList(item.children, callback, level + 1, result);
+//     if (item.children?.length) {
+//       treeToList(item.children, callback, level + 1, result);
+//     }
 //   }
 
 //   // Return the final output array.
 //   return result;
 // }
-function treeToList(tree, callback, level = 0, result = []) {
-  // Iterate over each item in the input tree.
-  for (const item of tree) {
-    // If a callback is provided, call the callback with the current item and level, and push the result to the output array. Otherwise, push the current item directly to the output array.
-    const processedItem = callback ? callback(item, level) : item;
-    result.push(processedItem);
 
-    // If the current item has children, recursively call the function with the children as the new input tree, an updated level, and the same output array being built up by the parent call.
-    if (item.children?.length) {
-      treeToList(item.children, callback, level + 1, result);
-    }
-  }
+//v2 with one duplicate
+// function listToTree(list) {
+//   let commentMap = {};
+//   let roots = [];
 
-  // Return the final output array.
-  return result;
-}
-function listToTree(comments) {
-  const commentMap = {};
-  const tree = [];
+//   for (const item of list) {
+//     const comment = {
+//       ...item,
+//       children: []
+//     };
 
-  comments.forEach(comment => {
-    const commentId = comment.id_comments;
-    comment.children = [];
-    commentMap[commentId] = comment;
-  });
+//     commentMap[comment.id_comments] = comment;
 
-  comments.forEach(comment => {
-    const parentId = comment.parent_id;
-    if (parentId !== 0) {
-      const parentComment = commentMap[parentId];
-      if (parentComment) {
-        parentComment.children.push(comment);
-      }
-    } else {
-      tree.push(comment);
-    }
-  });
+//     // If the comment has a parent, add it as a child to the parent comment
+//     if (comment.parent_id !== null && commentMap.hasOwnProperty(comment.parent_id)) {
+//       const parentComment = commentMap[comment.parent_id];
 
+//       parentComment.children.push(comment); // Add the comment as a child to the parent comment
+//     } else {
+//       // If the comment doesn't have a parent, add it as a root comment
+//       roots.push(comment);
+//     }
+//   }
 
-  return tree;
-}
+//   return roots;
+// }
+
+// // working with doublon
 // function listToTree(list) {
 //   let trees = {};
 //   let roots = {};
@@ -533,6 +588,7 @@ function listToTree(comments) {
 //     if (!trees[item.id_comments]) {
 //       trees[item.id_comments] = item;
 //       trees[item.id_comments].children = [];
+
 //     } else {
 //       trees[item.id_comments] = { ...trees[item.id_comments], ...item };
 //     }
@@ -553,7 +609,6 @@ function listToTree(comments) {
 //   return Object.values(roots);
 // }
 
-
 // Managing the assignment of `parent_comment_id` in your front-end depends on how you are structuring and displaying your comments. Here is a general approach:
 
 // 1. When rendering the comments, you can maintain a data structure that represents the hierarchy of comments. Each comment object should have properties like `id`, `parent_comment_id`, and `content`.
@@ -569,7 +624,6 @@ function listToTree(comments) {
 // Remember to update the underlying data structure and re-render the comments section to reflect the changes whenever a new comment is added or a reply is made.
 
 // By maintaining this hierarchical data structure and handling the assignment of `parent_comment_id` accordingly, you can easily manage the organization of comments and their replies in your front-end application.
-
 
 // "comments": [
 //   {
