@@ -442,8 +442,8 @@ function getPostComments(postId) {
       } else {
         // console.log(result);
         const list = listToTree(result); // Extract list and commentMap from listToTree result
-        console.log(result);
-        console.log(list)
+        // console.log(result);
+        // console.log(list)
 
         const flatList = treeToList(list, (item, level) => {
           return {
