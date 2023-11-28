@@ -1,0 +1,36 @@
+{
+  "files": {
+    "main.css": "/static/css/main.ffcc3fcb.css",
+    "main.js": "/static/js/main.24bfc38d.js",
+    "static/media/shop_test.jpg": "/static/media/shop_test.fb54e3c2c9cb7bb42ca8.jpg",
+    "static/media/dev_img.jpg": "/static/media/dev_img.dde029dfd426bffc0e4c.jpg",
+    "static/media/dev_img_v2.jpg": "/static/media/dev_img_v2.cddd80cd2a30d83ffe28.jpg",
+    "static/media/des_img.jpg": "/static/media/des_img.d2fdaef1060c91478811.jpg",
+    "static/media/team.png": "/static/media/team.7ee1a586232e9fa13b19.png",
+    "static/media/meeting.png": "/static/media/meeting.63f84effc6d6e7af3815.png",
+    "static/media/map.png": "/static/media/map.0057f07b5ac5d3078ca1.png",
+    "static/media/help.png": "/static/media/help.7e8f3e451c3846a600e9.png",
+    "static/media/news.png": "/static/media/news.e7fae58e1c958a87d355.png",
+    "static/media/phone.png": "/static/media/phone.fd3abaa9dd3031970fac.png",
+    "static/media/employee.png": "/static/media/employee.7c954979214e0b0a677b.png",
+    "static/media/certificate.png": "/static/media/certificate.cd6373daab24008ad0de.png",
+    "static/media/new.png": "/static/media/new.cfd4c2ead2874e282e77.png",
+    "static/media/idea.png": "/static/media/idea.2963f10b53f51efaaa6a.png",
+    "static/media/loupe.png": "/static/media/loupe.53ded239c8352f1b8183.png",
+    "static/media/notification.png": "/static/media/notification.5275c3ff1bbe12104ea9.png",
+    "static/media/dashboard.png": "/static/media/dashboard.fcb2c8db1138b6628692.png",
+    "static/media/chat_bubble.png": "/static/media/chat_bubble.cafdac9d217742c34791.png",
+    "static/media/book.png": "/static/media/book.1622873a8d9b852a9024.png",
+    "static/media/heart_empty.png": "/static/media/heart_empty.8592d1a03bad22e8b244.png",
+    "static/media/print.png": "/static/media/print.f72d89a52e3847f38a72.png",
+    "static/media/post_selected.png": "/static/media/post_selected.bc9183571ecc7d002ac2.png",
+    "static/media/post.png": "/static/media/post.9365834e12acff3ae0a6.png",
+    "index.html": "/index.html",
+    "main.ffcc3fcb.css.map": "/static/css/main.ffcc3fcb.css.map",
+    "main.24bfc38d.js.map": "/static/js/main.24bfc38d.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.ffcc3fcb.css",
+    "static/js/main.24bfc38d.js"
+  ]
+}

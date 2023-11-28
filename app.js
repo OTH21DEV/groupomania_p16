@@ -34,11 +34,11 @@ app.use(bodyParser.json());
 app.use("/api/auth", userRoutes);
 app.use("/api/posts", postRoutes);
 
-// app.use(express.static("./build/"));
+app.use(express.static("./build/"));
 
-// app.get("/*", (req, res) => {
-//   res.sendFile("index.html", { root: "build/" });
-// });
+app.get("/*", (req, res) => {
+  res.sendFile("index.html", { root: "build/" });
+});
 /*
 app.use((req, res) => {
   res.json({ message: "Votre requête a bien été reçue !" });
