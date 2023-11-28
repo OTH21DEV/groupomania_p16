@@ -89,50 +89,80 @@ exports.createPost = async (req, res, next) => {
 };
 
 exports.modifyPost = async (req, res, next) => {
-  //check to modify query on  req.params.id
-  const sqlFindPost = "SELECT * FROM post WHERE id_post = '" + req.params.id + "' ";
+  const sqlFindPost = "SELECT * FROM post WHERE id_post = ?";
 
-  connection.query(sqlFindPost, async (err, result) => {
-    console.log(result[0].id_user);
-    console.log(req.auth.userId);
-    //check the id of user or admin
-    // if (result[0].id_user === req.auth.userId || req.auth.userId === 1) {
-    if (result[0].id_user == req.auth.userId) {
-      //check if there is a new file added
+  connection.query(sqlFindPost, [req.params.id], async (err, result) => {
+    if (err) {
+      // Handle SQL error
+      return res.status(500).json({ message: "Database query failed" });
+    }
+
+    if (!result.length) {
+      // No post found
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    let post = result[0];
+
+    // Check if the user is authorized to modify the post
+    if (post.id_user == req.auth.userId) {
+      let updateFields = [];
+      let queryParams = [];
+
+      if (req.body.title) {
+        updateFields.push("title = COALESCE(?, title)");
+        queryParams.push(req.body.title);
+      }
+
+      if (req.body.body) {
+        updateFields.push("body = COALESCE(?, body)");
+        queryParams.push(req.body.body);
+      }
+
+      // Check for new file upload
       if (req.file) {
-        //cancel media from Cloudinary
-        await cloudinary.uploader.destroy(result[0].cloudinary_id);
-        //upload new media to Cloudinary
-        let media = await cloudinary.uploader.upload(req.file.path);
+        try {
+          // Cancel media from Cloudinary
+          await cloudinary.uploader.destroy(post.cloudinary_id);
 
-        //COALESCE update title, body if not null, otherwise returns existing value
-        const sqlUpdatePost = "UPDATE post SET title = COALESCE(?, title),body= COALESCE(?, body),image_url=?,cloudinary_id=? WHERE id_post = '" + req.body.id_post + "' ";
+          // Upload new media to Cloudinary
+          let media = await cloudinary.uploader.upload(req.file.path);
+          console.log(media.secure_url, media.public_id);
 
-        connection.query(sqlUpdatePost, [req.body.title, req.body.body, media.secure_url, media.public_id], (err, result) => {
+          // Append new image URL and Cloudinary ID to the update fields
+          updateFields.push("image_url = ?");
+          updateFields.push("cloudinary_id = ?");
+          queryParams.push(media.secure_url, media.public_id);
+        } catch (cloudErr) {
+          // Handle Cloudinary error
+          return res.status(500).json({ message: "Failed to upload to Cloudinary" });
+        }
+      }
+
+      // Only proceed if there are fields to update
+      if (updateFields.length > 0) {
+        queryParams.push(req.params.id); // Parameter for the WHERE clause
+
+        const sqlUpdatePost = `UPDATE post SET ${updateFields.join(", ")} WHERE id_post = ?`;
+
+        connection.query(sqlUpdatePost, queryParams, (updateErr, updateResult) => {
+          if (updateErr) {
+            // Handle SQL error
+            return res.status(500).json({ message: "Failed to update post" });
+          }
           res.json({
-            message: "Post modified with file",
+            message: "Post modified" + (req.file ? " with file" : ""),
           });
         });
-      }
-      //if there isn't new file update with req.body values
-      else {
-        const sqlUpdatePost = "UPDATE post SET title = COALESCE(?, title),body= COALESCE(?, body) WHERE id_post = '" + req.params.id + "' ";
-        connection.query(sqlUpdatePost, [req.body.title, req.body.body], (err, result) => {
-          if (!err) {
-            res.json({
-              message: "Post modified",
-            });
-          } else {
-            res.json({
-              message: "Non TEST authorized",
-            });
-          }
+      } else {
+        // Nothing to update
+        res.json({
+          message: "No changes applied",
         });
       }
-    }
-    //refuse connection if not owner of the post or admin
-    else {
-      res.json({
+    } else {
+      // Not authorized
+      res.status(403).json({
         message: "Non authorized",
       });
     }
