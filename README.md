@@ -12,9 +12,9 @@ LIVE LINK : https://corporate-social-network-902adf387c2e.herokuapp.com/login
 - **News Posting:**  Employees can share updates and information by posting news.
 - **Media Management:** Upload and manage images using Cloudinary.
 - **Comments & Emojis:** Users can comment on posts, enhanced with emojis from emoji-mart.
-- **Likes System:**Like functionality for engaging with posts.
-- **Post Management:**Update and delete posts as necessary.
-- **Authentication:**Simple email-based authentication system.
+- **Likes System:** Like functionality for engaging with posts.
+- **Post Management:** Update and delete posts as necessary.
+- **Authentication:** Simple email-based authentication system.
 
 ## Tech stack : Backend
 
